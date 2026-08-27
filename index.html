@@ -12,17 +12,29 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: #f4f6f9; color: #333; padding-bottom: 80px; }
+        
         header { background-color: #1a73e8; color: white; padding: 16px; text-align: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
         header h1 { font-size: 1.2rem; font-weight: 700; }
-        header p { font-size: 0.8rem; opacity: 0.9; margin-top: 4px; }
+        .clock-banner { font-size: 0.85rem; font-weight: 600; background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 20px; display: inline-block; margin-top: 6px; }
+
+        /* Flood Alert Widget */
+        .flood-widget { background: #ffffff; border-radius: 12px; padding: 12px 14px; margin: 12px auto; max-width: 600px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-left: 5px solid #0288d1; }
+        .flood-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; font-weight: 700; color: #0288d1; margin-bottom: 6px; }
+        .flood-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.78rem; margin-top: 6px; }
+        .flood-item { background: #f0f8ff; padding: 6px 8px; border-radius: 6px; }
+        .flood-item span { display: block; font-weight: 700; color: #111; margin-bottom: 2px; }
+
         .tabs { display: flex; background: white; border-bottom: 1px solid #ddd; }
         .tab-btn { flex: 1; padding: 12px; text-align: center; font-weight: 600; font-size: 0.9rem; border: none; background: none; cursor: pointer; color: #666; }
         .tab-btn.active { color: #1a73e8; border-bottom: 3px solid #1a73e8; }
+        
         .container { padding: 12px; max-width: 600px; margin: 0 auto; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
+        
         .map-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 16px; }
         .map-card iframe { width: 100%; height: 450px; border: none; }
+        
         .card { background: white; border-radius: 12px; padding: 14px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
         .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         .location { font-weight: 700; font-size: 1rem; color: #111; }
@@ -33,6 +45,7 @@
         .time { font-size: 0.75rem; color: #888; margin-bottom: 8px; }
         .desc { font-size: 0.9rem; color: #444; margin-bottom: 10px; line-height: 1.4; }
         .traffic-img { width: 100%; max-height: 250px; object-fit: cover; border-radius: 8px; margin-bottom: 8px; }
+        
         .fab { position: fixed; bottom: 20px; right: 20px; background: #1a73e8; color: white; border: none; padding: 14px 20px; border-radius: 30px; font-weight: bold; box-shadow: 0 4px 12px rgba(26,115,232,0.4); cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 200; justify-content: center; align-items: flex-end; }
         .modal-content { background: white; width: 100%; max-width: 600px; padding: 20px; border-radius: 16px 16px 0 0; }
@@ -46,12 +59,32 @@
 <body>
     <header>
         <h1>🚦 Cavite – Noveleta Traffic Tracker</h1>
-        <p>Live Road Conditions & Flood Updates</p>
+        <div class="clock-banner" id="localClock">🕒 Loading local time...</div>
     </header>
+
+    <!-- High Tide & Flood Warning Gauge Widget -->
+    <div class="flood-widget">
+        <div class="flood-header">
+            <span>🌊 Tide & Flood Status (Noveleta)</span>
+            <span class="badge badge-clear" id="tideStatusBadge">NORMAL TIDE</span>
+        </div>
+        <div class="flood-grid">
+            <div class="flood-item">
+                <span>San Rafael I / Market</span>
+                <span id="statusMarket" style="color:#2e7d32; font-size:0.75rem;">Passable to all vehicles</span>
+            </div>
+            <div class="flood-item">
+                <span>Marseilla / Crossing</span>
+                <span id="statusCrossing" style="color:#2e7d32; font-size:0.75rem;">Passable to all vehicles</span>
+            </div>
+        </div>
+    </div>
+
     <div class="tabs">
         <button class="tab-btn active" onclick="switchTab('feed')">📷 Live Feed</button>
         <button class="tab-btn" onclick="switchTab('map')">🗺️ Interactive Map</button>
     </div>
+
     <div class="container">
         <div id="feed" class="tab-content active">
             <div id="feed-container">Loading live traffic updates...</div>
@@ -78,7 +111,7 @@
                 </select>
             </div>
             <div class="form-group">
-                <label>Traffic Status</label>
+                <label>Traffic / Flood Status</label>
                 <select id="inputStatus">
                     <option value="Heavy / Flooded">Heavy / Flooded</option>
                     <option value="Heavy">Heavy</option>
@@ -100,7 +133,25 @@
     </div>
 
     <script>
-        // Your Exact Firebase Configuration
+        // Live Local Clock Function
+        function updateClock() {
+            const now = new Date();
+            const options = { 
+                timeZone: 'Asia/Manila', 
+                weekday: 'short', 
+                month: 'short', 
+                day: 'numeric', 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit',
+                hour12: true 
+            };
+            document.getElementById('localClock').innerText = '🕒 PHT: ' + now.toLocaleString('en-US', options);
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyBGhH2ZX7u6cKD1VFrGSxSE6x5fX1mYaE",
             authDomain: "noveleta-traffic.firebaseapp.com",
@@ -134,11 +185,30 @@
             feedContainer.innerHTML = '';
 
             const posts = [];
+            let hasFlooding = false;
+
             snapshot.forEach((childSnapshot) => {
-                posts.push(childSnapshot.val());
+                const post = childSnapshot.val();
+                posts.push(post);
+
+                if (post.status && post.status.includes('Flooded')) {
+                    hasFlooding = true;
+                }
             });
 
-            // Show newest posts at the top
+            // Auto-update Flood Gauge based on recent user reports
+            if (hasFlooding) {
+                document.getElementById('tideStatusBadge').innerText = 'FLOOD WARNING';
+                document.getElementById('tideStatusBadge').className = 'badge badge-heavy';
+                document.getElementById('statusMarket').innerText = '⚠️ Caution: Flooding reported';
+                document.getElementById('statusMarket').style.color = '#c62828';
+            } else {
+                document.getElementById('tideStatusBadge').innerText = 'NORMAL TIDE';
+                document.getElementById('tideStatusBadge').className = 'badge badge-clear';
+                document.getElementById('statusMarket').innerText = 'Passable to all vehicles';
+                document.getElementById('statusMarket').style.color = '#2e7d32';
+            }
+
             posts.reverse();
 
             if (posts.length === 0) {
