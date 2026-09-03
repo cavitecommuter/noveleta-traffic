@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cavite - Noveleta Live Traffic & Tide Tracker</title>
     
-    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
@@ -21,7 +20,12 @@
         .admin-toggle-btn { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; cursor: pointer; white-space: nowrap; }
         .admin-toggle-btn.active { background: #c62828; border-color: #ff8a80; }
 
-        /* Widgets Container */
+        .hero-banner { background: linear-gradient(135deg, #0288d1 0%, #1a73e8 100%); color: white; padding: 16px; margin: 12px auto; max-width: 600px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .hero-content { display: flex; justify-content: space-between; align-items: center; }
+        .hero-text h3 { font-size: 1rem; font-weight: 700; margin-bottom: 2px; }
+        .hero-text p { font-size: 0.78rem; opacity: 0.9; }
+        .hero-art { font-size: 2.2rem; background: rgba(255,255,255,0.15); padding: 8px 12px; border-radius: 10px; }
+
         .widget-card { background: #ffffff; border-radius: 12px; padding: 12px 14px; margin: 12px auto; max-width: 600px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-left: 5px solid #0288d1; }
         .widget-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.88rem; font-weight: 700; color: #0288d1; margin-bottom: 6px; }
         .widget-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.78rem; margin-top: 6px; }
@@ -38,7 +42,7 @@
         .tab-content.active { display: block; }
         
         .map-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 16px; }
-        .map-card iframe { width: 100%; height: 480px; border: none; }
+        .map-card iframe { width: 100%; height: 480px; border: none; pointer-events: auto; }
         
         .card { background: white; border-radius: 12px; padding: 14px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.06); position: relative; }
         .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
@@ -66,7 +70,6 @@
 </head>
 <body id="appBody">
     <header>
-        <!-- Invisible spacer element to balance the flex layout and keep the center title perfectly centered -->
         <div style="width: 90px;"></div>
         <div class="header-center">
             <h1>🚦 Cavite – Noveleta Traffic Tracker</h1>
@@ -75,7 +78,16 @@
         <button id="adminBtn" class="admin-toggle-btn" onclick="toggleAdminMode()">🔒 Admin Mode</button>
     </header>
 
-    <!-- High Tide & Flood Warning Gauge Widget -->
+    <div class="hero-banner">
+        <div class="hero-content">
+            <div class="hero-text">
+                <h3>Cavite & Noveleta Coastal Corridor</h3>
+                <p>Live community monitoring across Crossing, San Rafael, & Diversion.</p>
+            </div>
+            <div class="hero-art">🌉🚗</div>
+        </div>
+    </div>
+
     <div class="widget-card">
         <div class="widget-header">
             <span>🌊 Dual Monitor: Flood & Tide</span>
@@ -93,7 +105,6 @@
         </div>
     </div>
 
-    <!-- Traffic Travel Time & Speed Estimator Widget -->
     <div class="widget-card" style="border-left-color: #f57f17;">
         <div class="widget-header" style="color: #f57f17;">
             <span>⏱️ Key Route Travel Times (Est.)</span>
@@ -102,11 +113,11 @@
         <div class="widget-grid">
             <div class="widget-item">
                 <span class="label">Noveleta Crossing ➔ Kawit</span>
-                <span class="value" id="routeNoveletaKawit" style="color:#1a73e8;">12 mins (~4.2 km)</span>
+                <span class="value" id="routeNoveletaKawit" style="color:#1a73e8;">Calculating...</span>
             </div>
             <div class="widget-item">
                 <span class="label">Diversion Road ➔ Rosario</span>
-                <span class="value" id="routeDiversionRosario" style="color:#1a73e8;">15 mins (~5.8 km)</span>
+                <span class="value" id="routeDiversionRosario" style="color:#1a73e8;">Calculating...</span>
             </div>
         </div>
     </div>
@@ -117,12 +128,10 @@
     </div>
 
     <div class="container">
-        <!-- Live Community Feed -->
         <div id="feed" class="tab-content active">
             <div id="feed-container">Loading live traffic updates...</div>
         </div>
 
-        <!-- Embedded Waze Live Map -->
         <div id="map" class="tab-content">
             <div class="map-card">
                 <iframe src="https://embed.waze.com/iframe?zoom=16&lat=14.4275&lon=120.8838&ct=livemap" allowfullscreen></iframe>
@@ -132,7 +141,6 @@
 
     <button class="fab" onclick="openModal()">📷 Post Update</button>
 
-    <!-- Submit Modal -->
     <div class="modal" id="postModal">
         <div class="modal-content">
             <h2 style="font-size: 1.1rem; margin-bottom: 12px;">Report Traffic / Flooding Condition</h2>
@@ -192,10 +200,7 @@
         }
 
         function deletePost(postId) {
-            if (!isAdmin) {
-                alert("Unauthorized action.");
-                return;
-            }
+            if (!isAdmin) { alert("Unauthorized action."); return; }
             if (confirm("Are you sure you want to delete this traffic update?")) {
                 db.ref('traffic_updates/' + postId).remove().catch((error) => {
                     alert("Failed to delete: " + error.message);
@@ -205,74 +210,29 @@
 
         function updateClock() {
             const now = new Date();
-            const options = { 
-                timeZone: 'Asia/Manila', 
-                weekday: 'short', 
-                month: 'short', 
-                day: 'numeric', 
-                hour: '2-digit', 
-                minute: '2-digit', 
-                second: '2-digit',
-                hour12: true 
-            };
+            const options = { timeZone: 'Asia/Manila', weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
             document.getElementById('localClock').innerText = '🕒 PHT: ' + now.toLocaleString('en-US', options);
         }
         setInterval(updateClock, 1000);
         updateClock();
 
         async function fetchMarineTide() {
-            const lat = 14.4275;
-            const lon = 120.8838;
-            const url = `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}&current=wave_height,ocean_current_velocity,sea_surface_temperature`;
-
             try {
-                const response = await fetch(url);
+                const response = await fetch('https://marine-api.open-meteo.com/v1/marine?latitude=14.4275&longitude=120.8838&current=wave_height');
                 const data = await response.json();
-                
                 if (data && data.current) {
                     const waveHeight = data.current.wave_height || 0;
                     document.getElementById('statusMarine').innerText = `${waveHeight.toFixed(2)}m Swell`;
-                    
                     if (waveHeight >= 1.0) {
                         document.getElementById('tideStatusBadge').innerText = 'HIGH TIDE SWELL';
                         document.getElementById('tideStatusBadge').className = 'badge badge-heavy';
                     }
                 }
             } catch (err) {
-                console.error("Failed to load marine API data:", err);
                 document.getElementById('statusMarine').innerText = 'Manila Bay Tide';
             }
         }
         fetchMarineTide();
-        setInterval(fetchMarineTide, 15 * 60 * 1000);
-
-        function updateTravelEstimates(snapshotData) {
-            let baseNoveletaKawit = 12; 
-            let baseDiversionRosario = 15;
-            let heavyCount = 0;
-            
-            snapshotData.forEach((child) => {
-                const val = child.val();
-                if (val.status && (val.status.includes('Heavy') || val.status.includes('Flooded'))) {
-                    heavyCount++;
-                }
-            });
-
-            const delayMultiplier = 1 + (heavyCount * 0.35); 
-            const timeNK = Math.round(baseNoveletaKawit * delayMultiplier);
-            const timeDR = Math.round(baseDiversionRosario * delayMultiplier);
-
-            document.getElementById('routeNoveletaKawit').innerText = `${timeNK} mins (~4.2 km)`;
-            document.getElementById('routeDiversionRosario').innerText = `${timeDR} mins (~5.8 km)`;
-
-            if (heavyCount >= 2) {
-                document.getElementById('trafficSpeedStatus').innerText = 'CONGESTED';
-                document.getElementById('trafficSpeedStatus').className = 'badge badge-heavy';
-            } else {
-                document.getElementById('trafficSpeedStatus').innerText = 'NORMAL FLOW';
-                document.getElementById('trafficSpeedStatus').className = 'badge badge-clear';
-            }
-        }
 
         const firebaseConfig = {
             apiKey: "AIzaSyBGhH2ZX7u6cKD1VFrGSxSE6x5fX1mYaE",
@@ -307,17 +267,18 @@
             let hasFlooding = false;
 
             snapshot.forEach((childSnapshot) => {
-                const key = childSnapshot.key;
                 const post = childSnapshot.val();
-                post.id = key; 
+                post.id = childSnapshot.key;
                 posts.push(post);
-
-                if (post.status && post.status.includes('Flooded')) {
-                    hasFlooding = true;
-                }
+                if (post.status && post.status.includes('Flooded')) hasFlooding = true;
             });
 
-            updateTravelEstimates(snapshot);
+            let baseNoveletaKawit = 12, baseDiversionRosario = 15;
+            let heavyCount = posts.filter(p => p.status && (p.status.includes('Heavy') || p.status.includes('Flooded'))).length;
+            let mult = 1 + (heavyCount * 0.35);
+            
+            document.getElementById('routeNoveletaKawit').innerText = `${Math.round(baseNoveletaKawit * mult)} mins (~4.2 km)`;
+            document.getElementById('routeDiversionRosario').innerText = `${Math.round(baseDiversionRosario * mult)} mins (~5.8 km)`;
 
             if (hasFlooding) {
                 document.getElementById('tideStatusBadge').innerText = 'FLOOD WARNING';
@@ -341,7 +302,7 @@
                 if (post.status.includes('Heavy')) badgeClass = 'badge-heavy';
                 if (post.status.includes('Moderate')) badgeClass = 'badge-moderate';
 
-                const cardHTML = `
+                feedContainer.innerHTML += `
                     <div class="card">
                         <div class="card-header">
                             <span class="location">${post.location}</span>
@@ -356,8 +317,9 @@
                         </div>
                     </div>
                 `;
-                feedContainer.innerHTML += cardHTML;
             });
+        }, (error) => {
+            document.getElementById('feed-container').innerHTML = `<p style="text-align:center; color:#c62828; padding:20px;">Database connection error. Check Firebase Rules.</p>`;
         });
 
         function compressImage(file, callback) {
@@ -368,30 +330,14 @@
                 img.src = event.target.result;
                 img.onload = function() {
                     const canvas = document.createElement('canvas');
-                    const MAX_WIDTH = 500;
-                    const MAX_HEIGHT = 500;
-                    let width = img.width;
-                    let height = img.height;
-
-                    if (width > height) {
-                        if (width > MAX_WIDTH) {
-                            height *= MAX_WIDTH / width;
-                            width = MAX_WIDTH;
-                        }
-                    } else {
-                        if (height > MAX_HEIGHT) {
-                            width *= MAX_HEIGHT / height;
-                            height = MAX_HEIGHT;
-                        }
-                    }
-
-                    canvas.width = width;
-                    canvas.height = height;
+                    const MAX_WIDTH = 500, MAX_HEIGHT = 500;
+                    let width = img.width, height = img.height;
+                    if (width > height) { if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; } }
+                    else { if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; } }
+                    canvas.width = width; canvas.height = height;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
-                    
-                    const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.5);
-                    callback(compressedDataUrl);
+                    callback(canvas.toDataURL('image/jpeg', 0.5));
                 }
             }
         }
@@ -402,59 +348,30 @@
             const desc = document.getElementById('inputDesc').value;
             const photoInput = document.getElementById('inputPhoto');
 
-            if (!desc) {
-                alert("Please add a short description.");
-                return;
-            }
-
+            if (!desc) { alert("Please add a short description."); return; }
             const submitBtn = document.querySelector('.btn-submit');
-            submitBtn.innerText = "Processing...";
-            submitBtn.disabled = true;
+            submitBtn.innerText = "Processing..."; submitBtn.disabled = true;
 
             const newPostRef = db.ref('traffic_updates').push();
-            const postData = {
-                location: location,
-                status: status,
-                desc: desc,
-                timestamp: firebase.database.ServerValue.TIMESTAMP,
-                image: ''
-            };
+            const postData = { location, status, desc, timestamp: firebase.database.ServerValue.TIMESTAMP, image: '' };
 
             if (photoInput.files && photoInput.files[0]) {
                 compressImage(photoInput.files[0], function(compressedUrl) {
                     postData.image = compressedUrl;
-                    newPostRef.set(postData).then(() => {
-                        closeModal();
-                        resetForm();
-                        submitBtn.innerText = "Publish Update";
-                        submitBtn.disabled = false;
-                    });
+                    newPostRef.set(postData).then(() => { closeModal(); resetForm(); submitBtn.innerText = "Publish Update"; submitBtn.disabled = false; });
                 });
             } else {
-                newPostRef.set(postData).then(() => {
-                    closeModal();
-                    resetForm();
-                    submitBtn.innerText = "Publish Update";
-                    submitBtn.disabled = false;
-                });
+                newPostRef.set(postData).then(() => { closeModal(); resetForm(); submitBtn.innerText = "Publish Update"; submitBtn.disabled = false; });
             }
         }
 
-        function resetForm() {
-            document.getElementById('inputDesc').value =──
-            document.getElementById('inputDesc').value = '';
-            document.getElementById('inputPhoto').value = '';
-        }
-
+        function resetForm() { document.getElementById('inputDesc').value = ''; document.getElementById('inputPhoto').value = ''; }
         function switchTab(tabId, evt) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
-            if (evt && evt.target) {
-                evt.target.classList.add('active');
-            }
+            if (evt && evt.target) evt.target.classList.add('active');
         }
-
         function openModal() { document.getElementById('postModal').style.display = 'flex'; }
         function closeModal() { document.getElementById('postModal').style.display = 'none'; }
     </script>
