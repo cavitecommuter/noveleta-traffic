@@ -14,8 +14,11 @@
         body { background-color: #f4f6f9; color: #333; padding-bottom: 80px; }
         
         header { background-color: #1a73e8; color: white; padding: 16px; text-align: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
-        header h1 { font-size: 1.2rem; font-weight: 700; }
-        .clock-banner { font-size: 0.85rem; font-weight: 600; background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 20px; display: inline-block; margin-top: 6px; }
+        header h1 { font-size: 1.1rem; font-weight: 700; }
+        .clock-banner { font-size: 0.75rem; font-weight: 600; background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 20px; display: inline-block; margin-top: 4px; }
+        
+        .admin-toggle-btn { position: absolute; top: 16px; right: 16px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; cursor: pointer; }
+        .admin-toggle-btn.active { background: #c62828; border-color: #ff8a80; }
 
         /* Flood & Tide Alert Widget */
         .flood-widget { background: #ffffff; border-radius: 12px; padding: 12px 14px; margin: 12px auto; max-width: 600px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-left: 5px solid #0288d1; }
@@ -24,7 +27,7 @@
         .flood-item { background: #f0f8ff; padding: 8px; border-radius: 6px; }
         .flood-item span { display: block; font-weight: 700; color: #111; margin-bottom: 2px; }
 
-        .tabs { display: flex; background: white; border-bottom: 1px solid #ddd; }
+        .tabs { display: flex; background: white; border-bottom: 1px solid #ddd; max-width: 600px; margin: 0 auto; }
         .tab-btn { flex: 1; padding: 12px; text-align: center; font-weight: 600; font-size: 0.9rem; border: none; background: none; cursor: pointer; color: #666; }
         .tab-btn.active { color: #1a73e8; border-bottom: 3px solid #1a73e8; }
         
@@ -35,7 +38,7 @@
         .map-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 16px; }
         .map-card iframe { width: 100%; height: 480px; border: none; }
         
-        .card { background: white; border-radius: 12px; padding: 14px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
+        .card { background: white; border-radius: 12px; padding: 14px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.06); position: relative; }
         .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         .location { font-weight: 700; font-size: 1rem; color: #111; }
         .badge { padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
@@ -46,7 +49,10 @@
         .desc { font-size: 0.9rem; color: #444; margin-bottom: 10px; line-height: 1.4; }
         .traffic-img { width: 100%; max-height: 250px; object-fit: cover; border-radius: 8px; margin-bottom: 8px; }
         
-        .fab { position: fixed; bottom: 20px; right: 20px; background: #1a73e8; color: white; border: none; padding: 14px 20px; border-radius: 30px; font-weight: bold; box-shadow: 0 4px 12px rgba(26,115,232,0.4); cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+        .btn-delete { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; cursor: pointer; float: right; display: none; margin-top: 4px; }
+        .admin-mode .btn-delete { display: inline-block; }
+
+        .fab { position: fixed; bottom: 20px; right: 20px; background: #1a73e8; color: white; border: none; padding: 14px 20px; border-radius: 30px; font-weight: bold; box-shadow: 0 4px 12px rgba(26,115,232,0.4); cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; z-index: 99; }
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 200; justify-content: center; align-items: flex-end; }
         .modal-content { background: white; width: 100%; max-width: 600px; padding: 20px; border-radius: 16px 16px 0 0; }
         .form-group { margin-bottom: 12px; }
@@ -56,13 +62,14 @@
         .btn-close { width: 100%; background: #eee; color: #333; padding: 10px; border: none; border-radius: 8px; font-weight: 600; margin-top: 6px; cursor: pointer; }
     </style>
 </head>
-<body>
+<body id="appBody">
     <header>
         <h1>🚦 Cavite – Noveleta Traffic Tracker</h1>
-        <div class="clock-banner" id="localClock">🕒 Loading local time...</div>
+        <div class="clock-banner" id="localClock">🕒 Loading...</div>
+        <button id="adminBtn" class="admin-toggle-btn" onclick="toggleAdminMode()">🔒 Admin Mode</button>
     </header>
 
-    <!-- High Tide & Flood Warning Gauge Widget (Dual Monitoring) -->
+    <!-- High Tide & Flood Warning Gauge Widget -->
     <div class="flood-widget">
         <div class="flood-header">
             <span>🌊 Dual Monitor: Flood & Open-Meteo Tide</span>
@@ -137,7 +144,41 @@
     </div>
 
     <script>
-        // Live Philippine Standard Time (PHT) Clock
+        let isAdmin = false;
+
+        function toggleAdminMode() {
+            if (!isAdmin) {
+                const pass = prompt("Enter Admin Password:");
+                if (pass === "admin123") {
+                    isAdmin = true;
+                    document.getElementById('appBody').classList.add('admin-mode');
+                    document.getElementById('adminBtn').innerText = "🔓 Exit Admin";
+                    document.getElementById('adminBtn').classList.add('active');
+                    alert("Admin Mode Enabled.");
+                } else if (pass !== null) {
+                    alert("Incorrect Password!");
+                }
+            } else {
+                isAdmin = false;
+                document.getElementById('appBody').classList.remove('admin-mode');
+                document.getElementById('adminBtn').innerText = "🔒 Admin Mode";
+                document.getElementById('adminBtn').classList.remove('active');
+                alert("Admin Mode Disabled.");
+            }
+        }
+
+        function deletePost(postId) {
+            if (!isAdmin) {
+                alert("Unauthorized action.");
+                return;
+            }
+            if (confirm("Are you sure you want to delete this traffic update?")) {
+                db.ref('traffic_updates/' + postId).remove().catch((error) => {
+                    alert("Failed to delete: " + error.message);
+                });
+            }
+        }
+
         function updateClock() {
             const now = new Date();
             const options = { 
@@ -155,7 +196,6 @@
         setInterval(updateClock, 1000);
         updateClock();
 
-        // Automatic Realtime Open-Meteo Marine API Data Fetcher
         async function fetchMarineTide() {
             const lat = 14.4275;
             const lon = 120.8838;
@@ -169,7 +209,6 @@
                     const waveHeight = data.current.wave_height || 0;
                     document.getElementById('statusMarine').innerText = `🌊 Sea Swell: ${waveHeight.toFixed(2)}m`;
                     
-                    // High tide swell alert trigger (Swell >= 1.0m)
                     if (waveHeight >= 1.0) {
                         document.getElementById('tideStatusBadge').innerText = 'HIGH TIDE SWELL';
                         document.getElementById('tideStatusBadge').className = 'badge badge-heavy';
@@ -181,9 +220,8 @@
             }
         }
         fetchMarineTide();
-        setInterval(fetchMarineTide, 15 * 60 * 1000); // Refresh every 15 mins
+        setInterval(fetchMarineTide, 15 * 60 * 1000);
 
-        // Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyBGhH2ZX7u6cKD1VFrGSxSE6x5fX1mYaE",
             authDomain: "noveleta-traffic.firebaseapp.com",
@@ -209,7 +247,6 @@
             return `${Math.floor(hours / 24)} day(s) ago`;
         }
 
-        // Firebase Realtime Updates Listener
         db.ref('traffic_updates').orderByChild('timestamp').on('value', (snapshot) => {
             const feedContainer = document.getElementById('feed-container');
             feedContainer.innerHTML = '';
@@ -218,7 +255,9 @@
             let hasFlooding = false;
 
             snapshot.forEach((childSnapshot) => {
+                const key = childSnapshot.key;
                 const post = childSnapshot.val();
+                post.id = key; 
                 posts.push(post);
 
                 if (post.status && post.status.includes('Flooded')) {
@@ -257,11 +296,51 @@
                         <div class="time">🕒 ${getTimeAgo(post.timestamp)}</div>
                         <div class="desc">${post.desc}</div>
                         ${post.image ? `<img src="${post.image}" class="traffic-img" alt="Traffic Photo">` : ''}
+                        <div>
+                            <button class="btn-delete" onclick="deletePost('${post.id}')">🗑️ Delete Post</button>
+                            <div style="clear: both;"></div>
+                        </div>
                     </div>
                 `;
                 feedContainer.innerHTML += cardHTML;
             });
         });
+
+        function compressImage(file, callback) {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = function(event) {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 600;
+                    const MAX_HEIGHT = 600;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > MAX_WIDTH) {
+                            height *= MAX_WIDTH / width;
+                            width = MAX_WIDTH;
+                        }
+                    } else {
+                        if (height > MAX_HEIGHT) {
+                            width *= MAX_HEIGHT / height;
+                            height = MAX_HEIGHT;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.6);
+                    callback(compressedDataUrl);
+                }
+            }
+        }
 
         function submitPost() {
             const location = document.getElementById('inputLocation').value;
@@ -274,6 +353,10 @@
                 return;
             }
 
+            const submitBtn = document.querySelector('.btn-submit');
+            submitBtn.innerText = "Processing...";
+            submitBtn.disabled = true;
+
             const newPostRef = db.ref('traffic_updates').push();
             const postData = {
                 location: location,
@@ -284,18 +367,22 @@
             };
 
             if (photoInput.files && photoInput.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    postData.image = e.target.result;
-                    newPostRef.set(postData);
+                compressImage(photoInput.files[0], function(compressedUrl) {
+                    postData.image = compressedUrl;
+                    newPostRef.set(postData).then(() => {
+                        closeModal();
+                        resetForm();
+                        submitBtn.innerText = "Publish Update";
+                        submitBtn.disabled = false;
+                    });
+                });
+            } else {
+                newPostRef.set(postData).then(() => {
                     closeModal();
                     resetForm();
-                };
-                reader.readAsDataURL(photoInput.files[0]);
-            } else {
-                newPostRef.set(postData);
-                closeModal();
-                resetForm();
+                    submitBtn.innerText = "Publish Update";
+                    submitBtn.disabled = false;
+                });
             }
         }
 
