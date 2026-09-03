@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cavite - Noveleta Live Traffic & Tide Tracker</title>
     
+    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
@@ -12,19 +13,21 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: #f4f6f9; color: #333; padding-bottom: 80px; }
         
-        header { background-color: #1a73e8; color: white; padding: 16px; text-align: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
-        header h1 { font-size: 1.1rem; font-weight: 700; }
-        .clock-banner { font-size: 0.75rem; font-weight: 600; background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 20px; display: inline-block; margin-top: 4px; }
+        header { background-color: #1a73e8; color: white; padding: 14px 16px; text-align: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 6px rgba(0,0,0,0.15); display: flex; justify-content: space-between; align-items: center; }
+        .header-left { text-align: left; }
+        header h1 { font-size: 1.05rem; font-weight: 700; line-height: 1.2; }
+        .clock-banner { font-size: 0.72rem; font-weight: 600; background: rgba(255,255,255,0.2); padding: 3px 8px; border-radius: 20px; display: inline-block; margin-top: 4px; }
         
-        .admin-toggle-btn { position: absolute; top: 16px; right: 16px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; cursor: pointer; }
+        .admin-toggle-btn { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; cursor: pointer; white-space: nowrap; }
         .admin-toggle-btn.active { background: #c62828; border-color: #ff8a80; }
 
-        /* Flood & Tide Alert Widget */
-        .flood-widget { background: #ffffff; border-radius: 12px; padding: 12px 14px; margin: 12px auto; max-width: 600px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-left: 5px solid #0288d1; }
-        .flood-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; font-weight: 700; color: #0288d1; margin-bottom: 6px; }
-        .flood-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.78rem; margin-top: 6px; }
-        .flood-item { background: #f0f8ff; padding: 8px; border-radius: 6px; }
-        .flood-item span { display: block; font-weight: 700; color: #111; margin-bottom: 2px; }
+        /* Widgets Container */
+        .widget-card { background: #ffffff; border-radius: 12px; padding: 12px 14px; margin: 12px auto; max-width: 600px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-left: 5px solid #0288d1; }
+        .widget-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.88rem; font-weight: 700; color: #0288d1; margin-bottom: 6px; }
+        .widget-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.78rem; margin-top: 6px; }
+        .widget-item { background: #f0f8ff; padding: 8px; border-radius: 6px; }
+        .widget-item .label { display: block; color: #555; font-size: 0.7rem; margin-bottom: 2px; }
+        .widget-item .value { display: block; font-weight: 700; color: #111; font-size: 0.78rem; }
 
         .tabs { display: flex; background: white; border-bottom: 1px solid #ddd; max-width: 600px; margin: 0 auto; }
         .tab-btn { flex: 1; padding: 12px; text-align: center; font-weight: 600; font-size: 0.9rem; border: none; background: none; cursor: pointer; color: #666; }
@@ -40,11 +43,11 @@
         .card { background: white; border-radius: 12px; padding: 14px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.06); position: relative; }
         .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         .location { font-weight: 700; font-size: 1rem; color: #111; }
-        .badge { padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
+        .badge { padding: 4px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; }
         .badge-heavy { background: #ffebee; color: #c62828; }
         .badge-moderate { background: #fff8e1; color: #f57f17; }
         .badge-clear { background: #e8f5e9; color: #2e7d32; }
-        .time { font-size: 0.75rem; color: #888; margin-bottom: 8px; }
+        .time { font-size: 0.72rem; color: #888; margin-bottom: 8px; }
         .desc { font-size: 0.9rem; color: #444; margin-bottom: 10px; line-height: 1.4; }
         .traffic-img { width: 100%; max-height: 250px; object-fit: cover; border-radius: 8px; margin-bottom: 8px; }
         
@@ -63,24 +66,45 @@
 </head>
 <body id="appBody">
     <header>
-        <h1>🚦 Cavite – Noveleta Traffic Tracker</h1>
-        <div class="clock-banner" id="localClock">🕒 Loading...</div>
+        <div class="header-left">
+            <h1>🚦 Cavite – Noveleta Traffic Tracker</h1>
+            <div class="clock-banner" id="localClock">🕒 Loading...</div>
+        </div>
         <button id="adminBtn" class="admin-toggle-btn" onclick="toggleAdminMode()">🔒 Admin Mode</button>
     </header>
 
-    <div class="flood-widget">
-        <div class="flood-header">
-            <span>🌊 Dual Monitor: Flood & Open-Meteo Tide</span>
+    <!-- High Tide & Flood Warning Gauge Widget -->
+    <div class="widget-card">
+        <div class="widget-header">
+            <span>🌊 Dual Monitor: Flood & Tide</span>
             <span class="badge badge-clear" id="tideStatusBadge">NORMAL TIDE</span>
         </div>
-        <div class="flood-grid">
-            <div class="flood-item">
-                <span>San Rafael I / Market Status</span>
-                <span id="statusMarket" style="color:#2e7d32; font-size:0.75rem;">Passable to all vehicles</span>
+        <div class="widget-grid">
+            <div class="widget-item">
+                <span class="label">San Rafael I / Market</span>
+                <span class="value" id="statusMarket" style="color:#2e7d32;">Passable</span>
             </div>
-            <div class="flood-item">
-                <span>Open-Meteo Sea Swell & Level</span>
-                <span id="statusMarine" style="color:#0288d1; font-size:0.75rem;">Fetching live ocean data...</span>
+            <div class="widget-item">
+                <span class="label">Open-Meteo Sea Swell</span>
+                <span class="value" id="statusMarine" style="color:#0288d1;">Fetching...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Traffic Travel Time & Speed Estimator Widget -->
+    <div class="widget-card" style="border-left-color: #f57f17;">
+        <div class="widget-header" style="color: #f57f17;">
+            <span>⏱️ Key Route Travel Times (Est.)</span>
+            <span class="badge badge-clear" id="trafficSpeedStatus">NORMAL FLOW</span>
+        </div>
+        <div class="widget-grid">
+            <div class="widget-item">
+                <span class="label">Noveleta Crossing ➔ Kawit</span>
+                <span class="value" id="routeNoveletaKawit" style="color:#1a73e8;">12 mins (~4.2 km)</span>
+            </div>
+            <div class="widget-item">
+                <span class="label">Diversion Road ➔ Rosario</span>
+                <span class="value" id="routeDiversionRosario" style="color:#1a73e8;">15 mins (~5.8 km)</span>
             </div>
         </div>
     </div>
@@ -91,10 +115,12 @@
     </div>
 
     <div class="container">
+        <!-- Live Community Feed -->
         <div id="feed" class="tab-content active">
             <div id="feed-container">Loading live traffic updates...</div>
         </div>
 
+        <!-- Embedded Waze Live Map -->
         <div id="map" class="tab-content">
             <div class="map-card">
                 <iframe src="https://embed.waze.com/iframe?zoom=16&lat=14.4275&lon=120.8838&ct=livemap" allowfullscreen></iframe>
@@ -104,6 +130,7 @@
 
     <button class="fab" onclick="openModal()">📷 Post Update</button>
 
+    <!-- Submit Modal -->
     <div class="modal" id="postModal">
         <div class="modal-content">
             <h2 style="font-size: 1.1rem; margin-bottom: 12px;">Report Traffic / Flooding Condition</h2>
@@ -144,7 +171,7 @@
         function toggleAdminMode() {
             if (!isAdmin) {
                 const pass = prompt("Enter Admin Password:");
-                if (pass === "admin123") {
+                if (pass === "P@ssw0rdSantuza") {
                     isAdmin = true;
                     document.getElementById('appBody').classList.add('admin-mode');
                     document.getElementById('adminBtn').innerText = "🔓 Exit Admin";
@@ -202,7 +229,7 @@
                 
                 if (data && data.current) {
                     const waveHeight = data.current.wave_height || 0;
-                    document.getElementById('statusMarine').innerText = `🌊 Sea Swell: ${waveHeight.toFixed(2)}m`;
+                    document.getElementById('statusMarine').innerText = `${waveHeight.toFixed(2)}m Swell`;
                     
                     if (waveHeight >= 1.0) {
                         document.getElementById('tideStatusBadge').innerText = 'HIGH TIDE SWELL';
@@ -211,11 +238,39 @@
                 }
             } catch (err) {
                 console.error("Failed to load marine API data:", err);
-                document.getElementById('statusMarine').innerText = 'Manila Bay Tide Active';
+                document.getElementById('statusMarine').innerText = 'Manila Bay Tide';
             }
         }
         fetchMarineTide();
         setInterval(fetchMarineTide, 15 * 60 * 1000);
+
+        function updateTravelEstimates(snapshotData) {
+            let baseNoveletaKawit = 12; 
+            let baseDiversionRosario = 15;
+            let heavyCount = 0;
+            
+            snapshotData.forEach((child) => {
+                const val = child.val();
+                if (val.status && (val.status.includes('Heavy') || val.status.includes('Flooded'))) {
+                    heavyCount++;
+                }
+            });
+
+            const delayMultiplier = 1 + (heavyCount * 0.35); 
+            const timeNK = Math.round(baseNoveletaKawit * delayMultiplier);
+            const timeDR = Math.round(baseDiversionRosario * delayMultiplier);
+
+            document.getElementById('routeNoveletaKawit').innerText = `${timeNK} mins (~4.2 km)`;
+            document.getElementById('routeDiversionRosario').innerText = `${timeDR} mins (~5.8 km)`;
+
+            if (heavyCount >= 2) {
+                document.getElementById('trafficSpeedStatus').innerText = 'CONGESTED';
+                document.getElementById('trafficSpeedStatus').className = 'badge badge-heavy';
+            } else {
+                document.getElementById('trafficSpeedStatus').innerText = 'NORMAL FLOW';
+                document.getElementById('trafficSpeedStatus').className = 'badge badge-clear';
+            }
+        }
 
         const firebaseConfig = {
             apiKey: "AIzaSyBGhH2ZX7u6cKD1VFrGSxSE6x5fX1mYaE",
@@ -260,13 +315,15 @@
                 }
             });
 
+            updateTravelEstimates(snapshot);
+
             if (hasFlooding) {
                 document.getElementById('tideStatusBadge').innerText = 'FLOOD WARNING';
                 document.getElementById('tideStatusBadge').className = 'badge badge-heavy';
-                document.getElementById('statusMarket').innerText = '⚠️ Caution: Flooding reported';
+                document.getElementById('statusMarket').innerText = '⚠️ Caution: Flooded';
                 document.getElementById('statusMarket').style.color = '#c62828';
             } else {
-                document.getElementById('statusMarket').innerText = 'Passable to all vehicles';
+                document.getElementById('statusMarket').innerText = 'Passable';
                 document.getElementById('statusMarket').style.color = '#2e7d32';
             }
 
@@ -301,7 +358,6 @@
             });
         });
 
-        // Automatically compresses images client-side for 100% free database storage
         function compressImage(file, callback) {
             const reader = new FileReader();
             reader.readAsDataURL(file);
