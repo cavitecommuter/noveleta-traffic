@@ -7,7 +7,6 @@
     
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
 
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
@@ -231,7 +230,6 @@
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        const storage = firebase.storage();
 
         function getTimeAgo(timestamp) {
             if (!timestamp) return "Just now";
@@ -303,6 +301,43 @@
             });
         });
 
+        // Automatically compresses images client-side for 100% free database storage
+        function compressImage(file, callback) {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = function(event) {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 500;
+                    const MAX_HEIGHT = 500;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > MAX_WIDTH) {
+                            height *= MAX_WIDTH / width;
+                            width = MAX_WIDTH;
+                        }
+                    } else {
+                        if (height > MAX_HEIGHT) {
+                            width *= MAX_HEIGHT / height;
+                            height = MAX_HEIGHT;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.5);
+                    callback(compressedDataUrl);
+                }
+            }
+        }
+
         function submitPost() {
             const location = document.getElementById('inputLocation').value;
             const status = document.getElementById('inputStatus').value;
@@ -315,12 +350,10 @@
             }
 
             const submitBtn = document.querySelector('.btn-submit');
-            submitBtn.innerText = "Uploading Photo...";
+            submitBtn.innerText = "Processing...";
             submitBtn.disabled = true;
 
             const newPostRef = db.ref('traffic_updates').push();
-            const postId = newPostRef.key;
-
             const postData = {
                 location: location,
                 status: status,
@@ -330,23 +363,14 @@
             };
 
             if (photoInput.files && photoInput.files[0]) {
-                const file = photoInput.files[0];
-                const storageRef = storage.ref(`traffic_images/${postId}_${file.name}`);
-
-                storageRef.put(file).then((snapshot) => {
-                    return snapshot.ref.getDownloadURL();
-                }).then((downloadURL) => {
-                    postData.image = downloadURL;
-                    return newPostRef.set(postData);
-                }).then(() => {
-                    closeModal();
-                    resetForm();
-                    submitBtn.innerText = "Publish Update";
-                    submitBtn.disabled = false;
-                }).catch((error) => {
-                    alert("Upload failed: " + error.message);
-                    submitBtn.innerText = "Publish Update";
-                    submitBtn.disabled = false;
+                compressImage(photoInput.files[0], function(compressedUrl) {
+                    postData.image = compressedUrl;
+                    newPostRef.set(postData).then(() => {
+                        closeModal();
+                        resetForm();
+                        submitBtn.innerText = "Publish Update";
+                        submitBtn.disabled = false;
+                    });
                 });
             } else {
                 newPostRef.set(postData).then(() => {
